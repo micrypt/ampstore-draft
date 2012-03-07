@@ -53,21 +53,23 @@ func (s *SkipList) Insert(value []byte) {
 	s.Length++
 }
 
-func (s *SkipList) Delete(value []byte) {
-	if !s.Contains(value) {
-		var prePtr *Element
-		for i := s.Level - 1; i >= 0; i++ {
-			for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
-				if bytes.Compare(ptr.Value, value) == 0 {
-					prePtr.Next[i] = ptr.Next[i].Next[i]
-					break
-				}
-				if bytes.Compare(ptr.Next[i].Value, value) > 0 {
-					break
-				}
+func (s *SkipList) Delete(value []byte) bool {
+	deleted := false
+	for i := s.Level - 1; i >= 0; i-- {
+      for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
+			if bytes.Compare(ptr.Next[i].Value, value) == 0 {
+				ptr.Next[i] = ptr.Next[i].Next[i]
+				deleted = true
+                fmt.Printf("Deleted")
+				break
+			}
+			if bytes.Compare(ptr.Next[i].Value, value) > 0 {
+                fmt.Printf("Next level >>\n")
+				break
 			}
 		}
 	}
+	return deleted
 }
 
 func (s *SkipList) Contains(value []byte) bool {
