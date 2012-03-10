@@ -6,5 +6,7 @@ include $(GOROOT)/src/Make.inc
 TARG=ampstore
 GOFILES=\
                 skiplist.go\
+                store.go\
+                server.go\
 
 include $(GOROOT)/src/Make.pkg

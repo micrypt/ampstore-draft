@@ -1,4 +1,5 @@
 // Ampstore.go : Draft version of the Ampify data store
+// Skiplist.go: Skiplist indexed by byte slices
 package ampstore
 
 import (
@@ -19,11 +20,13 @@ type SkipList struct {
 	Length int
 }
 
+// Create new skiplist
 func New(maxLevel int) *SkipList {
 	head := &Element{make([]*Element, maxLevel), []byte{}}
 	return &SkipList{Level: 0, Head: head, Length: 0}
 }
 
+// Insert element containing value into skiplist
 func (s *SkipList) Insert(value []byte) {
 	level := 0
 	t := time.Now()
@@ -53,6 +56,31 @@ func (s *SkipList) Insert(value []byte) {
 	s.Length++
 }
 
+// Retrieve base list entry containing element for iteration
+func (s *SkipList) FindElement(value []byte) *Element {
+	for i := s.Level - 1; i >= 0; i-- {
+		for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
+			if bytes.Compare(ptr.Next[i].Value, value) == 0 {
+                elPtr := ptr.Next[i]
+                currLevel := i
+                if currLevel > 0 {
+                  for ; currLevel > 0; currLevel-- {
+                    if elPtr.Next[1] != nil {
+                      elPtr = elPtr.Next[1]
+                    }
+                  }
+                }
+				return elPtr
+			}
+			if bytes.Compare(ptr.Next[i].Value, value) > 0 {
+				break
+			}
+		}
+	}
+	return nil
+}
+
+// Delete elements containing value from the skiplist
 func (s *SkipList) Delete(value []byte) bool {
 	deleted := false
 	for i := s.Level - 1; i >= 0; i-- {
@@ -60,7 +88,7 @@ func (s *SkipList) Delete(value []byte) bool {
 			if bytes.Compare(ptr.Next[i].Value, value) == 0 {
 				ptr.Next[i] = ptr.Next[i].Next[i]
 				deleted = true
-                fmt.Printf("Deleted")
+                fmt.Printf("Deleted!\n")
 				break
 			}
 			if bytes.Compare(ptr.Next[i].Value, value) > 0 {
@@ -72,6 +100,7 @@ func (s *SkipList) Delete(value []byte) bool {
 	return deleted
 }
 
+// Test if skiplist contains value
 func (s *SkipList) Contains(value []byte) bool {
 	for i := s.Level - 1; i >= 0; i-- {
 		for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
@@ -86,10 +115,12 @@ func (s *SkipList) Contains(value []byte) bool {
 	return false
 }
 
+// Retrieve length of skiplist
 func (s *SkipList) Len() int {
 	return s.Length
 }
 
+//  For debugging: Show elements in skiplist
 func (s *SkipList) Show() {
 	for i := s.Level - 1; i >= 0; i-- {
 		fmt.Printf("Level %d: ", i)
