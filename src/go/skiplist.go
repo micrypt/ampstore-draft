@@ -1,6 +1,6 @@
 // Ampstore.go : Draft version of the Ampify data store
 // Skiplist.go: Skiplist indexed by byte slices
-package ampstore
+package main
 
 import (
 	"bytes"
@@ -61,15 +61,15 @@ func (s *SkipList) FindElement(value []byte) *Element {
 	for i := s.Level - 1; i >= 0; i-- {
 		for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
 			if bytes.Compare(ptr.Next[i].Value, value) == 0 {
-                elPtr := ptr.Next[i]
-                currLevel := i
-                if currLevel > 0 {
-                  for ; currLevel > 0; currLevel-- {
-                    if elPtr.Next[1] != nil {
-                      elPtr = elPtr.Next[1]
-                    }
-                  }
-                }
+				elPtr := ptr.Next[i]
+				currLevel := i
+				if currLevel > 0 {
+					for ; currLevel > 0; currLevel-- {
+						if elPtr.Next[1] != nil {
+							elPtr = elPtr.Next[1]
+						}
+					}
+				}
 				return elPtr
 			}
 			if bytes.Compare(ptr.Next[i].Value, value) > 0 {
@@ -84,15 +84,15 @@ func (s *SkipList) FindElement(value []byte) *Element {
 func (s *SkipList) Delete(value []byte) bool {
 	deleted := false
 	for i := s.Level - 1; i >= 0; i-- {
-      for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
+		for ptr := s.Head; ptr.Next[i] != nil; ptr = ptr.Next[i] {
 			if bytes.Compare(ptr.Next[i].Value, value) == 0 {
 				ptr.Next[i] = ptr.Next[i].Next[i]
 				deleted = true
-                fmt.Printf("Deleted!\n")
+				fmt.Printf("Deleted!\n")
 				break
 			}
 			if bytes.Compare(ptr.Next[i].Value, value) > 0 {
-                fmt.Printf("Next level >>\n")
+				fmt.Printf("Next level >>\n")
 				break
 			}
 		}
