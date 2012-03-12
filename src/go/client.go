@@ -28,15 +28,17 @@ func (cl *Client) Connect() error {
 	return nil
 }
 
-func (cl *Client) SendCommand(msg []byte) (b [512]byte, err1 error) {
-	_, err := cl.conn.Write(msg)
-	if err != nil {
-		panic(fmt.Sprintf("Transmission error: %v", err))
-	}
-	_, err1 = cl.conn.Read(b[0:])
-	if err1 != nil {
-		panic(fmt.Sprintf("Receive error: %v", err1))
-	}
+func (cl *Client) SendCommand(msg string) (b [512]byte, err1 error) {
+	//_, err := cl.conn.Write(msg)
+	fmt.Fprint(cl.conn, msg)
+    fmt.Println("Sending: %v", msg)
+//	if err != nil {
+//		panic(fmt.Sprintf("Transmission error: %v", err))
+//	}
+	//_, err1 = cl.conn.Read(b[0:])
+	//if err1 != nil {
+	//	panic(fmt.Sprintf("Receive error: %v", err1))
+	//}
 	return
 }
 
@@ -61,7 +63,7 @@ func runClient(socket string) {
         if len(line) == 0 {
           continue
         }
-		if resp, err := client.SendCommand([]byte(line)); err != nil {
+		if resp, err := client.SendCommand(line); err != nil {
           panic(fmt.Sprintf("Response: %v, Error: %v", resp, err))
 		}
 	}

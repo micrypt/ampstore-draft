@@ -21,15 +21,18 @@ const (
 
 const SOCK = "/tmp/ampstore.sock"
 
+// This is spawned into a light thread that then handles following requests to the connection. Needs to loop and handle each query.
 func (s *Server) handleConn(c net.Conn) {
 	defer c.Close()
 	buf := make([]byte, 512)
-	nr, err := c.Read(buf)
-	fmt.Println("nr: ", nr)
-	if err != nil {
-		panic(fmt.Sprintf("Read: %v", err))
-	}
-	fmt.Println("buf: ", buf)
+    for {
+      nr, err := c.Read(buf)
+      fmt.Println("nr: ", nr)
+      if err != nil {
+          panic(fmt.Sprintf("Read: %v", err))
+      }
+      fmt.Println("buf: ", buf)
+    }
 //	nw, err := c.Write(buf)
 //	fmt.Println("nw: ", nw)
 //	if err != nil {
@@ -52,6 +55,7 @@ func (s *Server) Init() {
 			if err != nil {
 				panic(fmt.Sprintf("Accept: %v", err))
 			}
+            fmt.Println("Handling connection")
 			go s.handleConn(c)
 		}
 	}
