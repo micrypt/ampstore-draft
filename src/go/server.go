@@ -25,19 +25,21 @@ const SOCK = "/tmp/ampstore.sock"
 func (s *Server) handleConn(c net.Conn) {
 	defer c.Close()
 	buf := make([]byte, 512)
-    for {
-      nr, err := c.Read(buf)
-      fmt.Println("nr: ", nr)
-      if err != nil {
-          panic(fmt.Sprintf("Read: %v", err))
-      }
-      fmt.Println("buf: ", buf)
-    }
-//	nw, err := c.Write(buf)
-//	fmt.Println("nw: ", nw)
-//	if err != nil {
-//		panic(fmt.Sprintf("Write: %v", err))
-//	}
+	for {
+		nr, err := c.Read(buf)
+		fmt.Println("nr: ", nr)
+		if err != nil {
+			panic(fmt.Sprintf("Read: %v", err))
+		}
+		fmt.Println("buf: ", buf)
+		nw, err := c.Write(buf)
+        key := "test"
+        s.store.Set(&key, &buf) // Testing Set
+		fmt.Println("nw: ", nw)
+		if err != nil {
+			panic(fmt.Sprintf("Write: %v", err))
+		}
+	}
 }
 
 func (s *Server) Init() {
@@ -55,7 +57,7 @@ func (s *Server) Init() {
 			if err != nil {
 				panic(fmt.Sprintf("Accept: %v", err))
 			}
-            fmt.Println("Handling connection")
+			fmt.Println("Handling connection")
 			go s.handleConn(c)
 		}
 	}
