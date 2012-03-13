@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+    "strconv"
 )
 
 type Server struct {
@@ -19,27 +20,47 @@ const (
 	UNIX_SOCK
 )
 
+const BUFLEN = 12
 const SOCK = "/tmp/ampstore.sock"
 
-// This is spawned into a light thread that then handles following requests to the connection. Needs to loop and handle each query.
 func (s *Server) handleConn(c net.Conn) {
 	defer c.Close()
-	buf := make([]byte, 512)
+	buf := make([]byte, BUFLEN)
+    cmdVal := []byte{}
+    var cmd string
+    var params []string
+
 	for {
 		nr, err := c.Read(buf)
 		fmt.Println("nr: ", nr)
 		if err != nil {
 			panic(fmt.Sprintf("Read: %v", err))
 		}
-		fmt.Println("buf: ", buf)
-		nw, err := c.Write(buf)
-        key := "test"
-        s.store.Set(&key, &buf) // Testing Set
+        if nr > 0 {
+          cmdVal = append(cmdVal, buf[0:nr]...)
+          cmd, params, _, _ = parseRequest(cmdVal)
+        }
+        fmt.Printf("cmd: %v, params: %v\n", cmd, params)
+        fmt.Printf("cmdVal: %v\n", cmdVal)
+		nw, err := c.Write(cmdVal)
 		fmt.Println("nw: ", nw)
+        key := "test" // Dummy key
+        s.store.Set(&key, &cmdVal) // Testing Set
 		if err != nil {
 			panic(fmt.Sprintf("Write: %v", err))
 		}
 	}
+}
+
+func parseRequest(b []byte) (cmd string, params, vals []string, err error) {
+  cmd = string(b[0])
+  paramsLen, err := strconv.ParseInt(string(b[1]), 10, 32)
+  params = make([]string, paramsLen)
+  var i int64
+  for i = 0; i < paramsLen; i++ {
+    params[i] = string(b[2])
+  }
+  return
 }
 
 func (s *Server) Init() {

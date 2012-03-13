@@ -53,7 +53,7 @@ func runClient(socket string) {
 	client.Connect()
     buf := bufio.NewReader(os.Stdin)
 	for {
-	    fmt.Print(">>") // Show prompt
+	    fmt.Print(">> ") // Show prompt
         read, err := buf.ReadString('\n')
         if err != nil {
           fmt.Println("")
