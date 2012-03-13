@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
-    "strconv"
+	"strconv"
 )
 
 type Server struct {
@@ -20,47 +20,65 @@ const (
 	UNIX_SOCK
 )
 
-const BUFLEN = 12
-const SOCK = "/tmp/ampstore.sock"
+const (
+	BUFLEN      = 12
+	PARAMOFFSET = 2
+	SOCK        = "/tmp/ampstore.sock"
+)
 
 func (s *Server) handleConn(c net.Conn) {
 	defer c.Close()
 	buf := make([]byte, BUFLEN)
-    cmdVal := []byte{}
-    var cmd string
-    var params []string
-
+	cmdSlice := []byte{}
 	for {
 		nr, err := c.Read(buf)
 		fmt.Println("nr: ", nr)
 		if err != nil {
 			panic(fmt.Sprintf("Read: %v", err))
 		}
-        if nr > 0 {
-          cmdVal = append(cmdVal, buf[0:nr]...)
-          cmd, params, _, _ = parseRequest(cmdVal)
-        }
-        fmt.Printf("cmd: %v, params: %v\n", cmd, params)
-        fmt.Printf("cmdVal: %v\n", cmdVal)
-		nw, err := c.Write(cmdVal)
-		fmt.Println("nw: ", nw)
-        key := "test" // Dummy key
-        s.store.Set(&key, &cmdVal) // Testing Set
-		if err != nil {
-			panic(fmt.Sprintf("Write: %v", err))
+		if nr > 0 {
+			cmdSlice = append(cmdSlice, buf[0:nr]...)
+			cmd, params, _, done, _ := parseRequest(cmdSlice)
+			if done && cmd != "" && params != nil {
+				fmt.Printf("cmd: %v, params: %v\n", cmd, params)
+				fmt.Printf("cmdSlice: %v\n", cmdSlice)
+				nw, err := c.Write(cmdSlice)
+				fmt.Println("nw: ", nw)
+				key := "test"              // Dummy key
+				s.store.Set(&key, &cmdSlice) // Testing Set
+				if err != nil {
+					panic(fmt.Sprintf("Write: %v", err))
+				}
+                cmdSlice = []byte{}
+			}
 		}
 	}
 }
 
-func parseRequest(b []byte) (cmd string, params, vals []string, err error) {
-  cmd = string(b[0])
-  paramsLen, err := strconv.ParseInt(string(b[1]), 10, 32)
-  params = make([]string, paramsLen)
-  var i int64
-  for i = 0; i < paramsLen; i++ {
-    params[i] = string(b[2])
-  }
-  return
+func makeInt(b byte) (i int64, err error) {
+	i, err = strconv.ParseInt(string(b), 10, 32)
+	return
+}
+
+func parseRequest(b []byte) (cmd string, params, vals []string, done bool, err error) {
+    //bufferLen := len(b)
+	cmd = string(b[0])
+	paramsLen, err := makeInt(b[1])
+	params = make([]string, paramsLen)
+	var offset, length, i int64
+	offset = PARAMOFFSET
+	for i = 0; i < paramsLen; i++ {
+		length, _ = makeInt(b[offset])
+        fmt.Println("Param length: ", length)
+        rStart := offset+1
+        rEnd := rStart+length
+        fmt.Println("rStart: ", rStart, " rEnd: ", rEnd)
+		params[i] = string(b[rStart:rEnd])
+        fmt.Println("Current param: ", params[i])
+		offset = rEnd
+	}
+    done = true
+	return
 }
 
 func (s *Server) Init() {
