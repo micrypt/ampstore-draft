@@ -79,6 +79,7 @@ func runClient(socket string) {
 			}
 		}
 		resp, err := client.SendCommand(cmd)
+        // TODO: Only read required bytes of response
 		if err != nil {
 			panic(fmt.Sprintf("Response: %v, Error: %v", resp, err))
 		}
