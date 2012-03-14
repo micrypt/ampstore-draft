@@ -3,7 +3,7 @@ package main
 
 import (
 	"errors"
-    "fmt"
+	"fmt"
 	"sync"
 	//"time"
 )
@@ -29,9 +29,9 @@ func (s *KVStore) Get(k string, v *[]byte) error {
 	//  defer s.mu.Unlock()
 	if val, ok := s.table[k]; ok {
 		*v = val
-        //fmt.Println("v: ", *v)
-        //fmt.Println("val: ", val)
-        fmt.Println("s.table: ", s.table)
+		//fmt.Println("v: ", *v)
+		//fmt.Println("val: ", val)
+		fmt.Println("s.table: ", s.table)
 		return nil
 	}
 	return errors.New("key not found")
@@ -41,9 +41,9 @@ func (s *KVStore) Set(k string, v *[]byte, resp *[]byte) error {
 	//  s.mu.Lock()
 	//  defer s.mu.Unlock()
 	s.table[k] = *v
-    fmt.Println("v: ", *v)
-    //fmt.Println("s.table[k]: ", s.table[k])
-    *resp = []byte(OK_STRING)
+	fmt.Println("v: ", *v)
+	//fmt.Println("s.table[k]: ", s.table[k])
+	*resp = []byte(OK_STRING)
 	return nil
 }
 

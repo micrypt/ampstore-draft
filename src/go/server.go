@@ -26,7 +26,7 @@ const (
 	PARAMOFFSET  = 2
 	SOCK         = "/tmp/ampstore.sock"
 	ERROR_STRING = "ERROR"
-	OK_STRING = "OK"
+	OK_STRING    = "OK"
 )
 
 var COMMANDS_MAP = map[rune]func(*KVStore, []string, *[]byte) error{
@@ -35,19 +35,19 @@ var COMMANDS_MAP = map[rune]func(*KVStore, []string, *[]byte) error{
 }
 
 func getCommand(s *KVStore, values []string, resp *[]byte) error {
-    fmt.Println("Running GET with: ", values)
+	fmt.Println("Running GET with: ", values)
 	err := s.Get(values[0], resp)
 	return err
 }
 
 func setCommand(s *KVStore, values []string, resp *[]byte) error {
-    fmt.Println("Running SET with: ", values)
-    key := values[0]
-    var val []byte
-    for _, v := range values[1:] {
-      val = append(val, []byte(v)...)
-    }
-    err := s.Set(key, &val, resp)
+	fmt.Println("Running SET with: ", values)
+	key := values[0]
+	var val []byte
+	for _, v := range values[1:] {
+		val = append(val, []byte(v)...)
+	}
+	err := s.Set(key, &val, resp)
 	return err
 }
 
@@ -72,7 +72,7 @@ func (s *Server) handleConn(c net.Conn) {
 					c.Write([]byte(ERROR_STRING))
 					continue
 				}
-                fmt.Println("respSlice: ", respSlice)
+				fmt.Println("respSlice: ", respSlice)
 				nw, err := c.Write(respSlice)
 				fmt.Println("nw: ", nw)
 				if err != nil {
