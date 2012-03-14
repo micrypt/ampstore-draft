@@ -3,13 +3,14 @@ package main
 
 import (
 	"errors"
+    "fmt"
 	"sync"
 	//"time"
 )
 
 type Store interface {
-	Set(key, value *string) error
-	Get(key, value *string) error
+	Set(key string, value *[]byte) error
+	Get(key string, value *[]byte) error
 }
 
 type KVStore struct {
@@ -23,20 +24,26 @@ type record struct {
 	Key, Value string
 }
 
-func (s *KVStore) Get(k *string, v *[]byte) error {
+func (s *KVStore) Get(k string, v *[]byte) error {
 	//  s.mu.RLock()
 	//  defer s.mu.Unlock()
-	if val, ok := s.table[*k]; ok {
+	if val, ok := s.table[k]; ok {
 		*v = val
+        //fmt.Println("v: ", *v)
+        //fmt.Println("val: ", val)
+        fmt.Println("s.table: ", s.table)
 		return nil
 	}
 	return errors.New("key not found")
 }
 
-func (s *KVStore) Set(k *string, v *[]byte) error {
+func (s *KVStore) Set(k string, v *[]byte, resp *[]byte) error {
 	//  s.mu.Lock()
 	//  defer s.mu.Unlock()
-	s.table[*k] = *v
+	s.table[k] = *v
+    fmt.Println("v: ", *v)
+    //fmt.Println("s.table[k]: ", s.table[k])
+    *resp = []byte(OK_STRING)
 	return nil
 }
 

@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -21,15 +22,39 @@ const (
 )
 
 const (
-	BUFLEN      = 12
-	PARAMOFFSET = 2
-	SOCK        = "/tmp/ampstore.sock"
+	BUFLEN       = 12
+	PARAMOFFSET  = 2
+	SOCK         = "/tmp/ampstore.sock"
+	ERROR_STRING = "ERROR"
+	OK_STRING = "OK"
 )
+
+var COMMANDS_MAP = map[rune]func(*KVStore, []string, *[]byte) error{
+	'\x01': getCommand,
+	'\x02': setCommand,
+}
+
+func getCommand(s *KVStore, values []string, resp *[]byte) error {
+    fmt.Println("Running GET with: ", values)
+	err := s.Get(values[0], resp)
+	return err
+}
+
+func setCommand(s *KVStore, values []string, resp *[]byte) error {
+    fmt.Println("Running SET with: ", values)
+    key := values[0]
+    var val []byte
+    for _, v := range values[1:] {
+      val = append(val, []byte(v)...)
+    }
+    err := s.Set(key, &val, resp)
+	return err
+}
 
 func (s *Server) handleConn(c net.Conn) {
 	defer c.Close()
 	buf := make([]byte, BUFLEN)
-	cmdSlice := []byte{}
+	var cmdSlice, respSlice []byte
 	for {
 		nr, err := c.Read(buf)
 		fmt.Println("nr: ", nr)
@@ -38,46 +63,53 @@ func (s *Server) handleConn(c net.Conn) {
 		}
 		if nr > 0 {
 			cmdSlice = append(cmdSlice, buf[0:nr]...)
-			cmd, params, _, done, _ := parseRequest(cmdSlice)
-			if done && cmd != "" && params != nil {
+			cmd, params, done, _ := parseRequest(cmdSlice)
+			if done && params != nil {
 				fmt.Printf("cmd: %v, params: %v\n", cmd, params)
 				fmt.Printf("cmdSlice: %v\n", cmdSlice)
-				nw, err := c.Write(cmdSlice)
+				err1 := COMMANDS_MAP[cmd](s.store, params, &respSlice)
+				if err1 != nil {
+					c.Write([]byte(ERROR_STRING))
+					continue
+				}
+                fmt.Println("respSlice: ", respSlice)
+				nw, err := c.Write(respSlice)
 				fmt.Println("nw: ", nw)
-				key := "test"              // Dummy key
-				s.store.Set(&key, &cmdSlice) // Testing Set
 				if err != nil {
 					panic(fmt.Sprintf("Write: %v", err))
 				}
-                cmdSlice = []byte{}
+				cmdSlice = []byte{}
 			}
 		}
 	}
 }
 
-func makeInt(b byte) (i int64, err error) {
-	i, err = strconv.ParseInt(string(b), 10, 32)
+func makeInt(b byte) (i int, err error) {
+	i, err = strconv.Atoi(string(b))
 	return
 }
 
-func parseRequest(b []byte) (cmd string, params, vals []string, done bool, err error) {
-    //bufferLen := len(b)
-	cmd = string(b[0])
+func parseRequest(b []byte) (cmd rune, params []string, done bool, err error) {
+	cmd = bytes.Runes(b[:1])[0]
 	paramsLen, err := makeInt(b[1])
 	params = make([]string, paramsLen)
-	var offset, length, i int64
+	var offset, length, totalLen, i int
 	offset = PARAMOFFSET
 	for i = 0; i < paramsLen; i++ {
 		length, _ = makeInt(b[offset])
-        fmt.Println("Param length: ", length)
-        rStart := offset+1
-        rEnd := rStart+length
-        fmt.Println("rStart: ", rStart, " rEnd: ", rEnd)
+		totalLen = totalLen + length
+		fmt.Println("Param length: ", length)
+		rStart := offset + 1
+		rEnd := rStart + length
+		fmt.Println("rStart: ", rStart, " rEnd: ", rEnd)
 		params[i] = string(b[rStart:rEnd])
-        fmt.Println("Current param: ", params[i])
+		fmt.Println("Current param: ", params[i])
 		offset = rEnd
 	}
-    done = true
+	totalLen = PARAMOFFSET + paramsLen + totalLen
+	if totalLen == int(len(b)) {
+		done = true
+	}
 	return
 }
 

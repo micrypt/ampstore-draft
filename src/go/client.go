@@ -2,10 +2,11 @@
 package main
 
 import (
-    "bufio"
+	"bufio"
 	"fmt"
 	"net"
-    "os"
+	"os"
+	"strings"
 )
 
 type Client struct {
@@ -14,13 +15,19 @@ type Client struct {
 	socket    string
 }
 
+var COMMANDS = map[string]rune{
+	"GET":  '\x01',
+	"SET":  '\x02',
+	"SCAN": '\x03',
+}
+
 func (cl *Client) Connect() error {
 	if cl.sock_mode == UNIX_SOCK {
 		// Create the connection
 		conn, err := net.Dial("unix", cl.socket)
-        if err != nil {
-          panic(fmt.Sprintf("Error creating connection: %v", err))
-        }
+		if err != nil {
+			panic(fmt.Sprintf("Error creating connection: %v", err))
+		}
 		cl.conn = conn
 		// Print info about the unix socket
 		fmt.Println("Connected to", conn.RemoteAddr())
@@ -29,16 +36,15 @@ func (cl *Client) Connect() error {
 }
 
 func (cl *Client) SendCommand(msg string) (b [512]byte, err1 error) {
-	//_, err := cl.conn.Write(msg)
-    _, err := fmt.Fprint(cl.conn, msg)
-    fmt.Println("Sending: %v", msg)
-    if err != nil {
-        panic(fmt.Sprintf("Transmission error: %v", err))
-    }
-    _, err1 = cl.conn.Read(b[0:])
-    if err1 != nil {
-        panic(fmt.Sprintf("Receive error: %v", err1))
-    }
+	_, err := fmt.Fprint(cl.conn, msg)
+	fmt.Println("Sending: ", msg)
+	if err != nil {
+		panic(fmt.Sprintf("Transmission error: %v", err))
+	}
+	_, err1 = cl.conn.Read(b[0:])
+	if err1 != nil {
+		panic(fmt.Sprintf("Receive error: %v", err1))
+	}
 	return
 }
 
@@ -51,22 +57,31 @@ func runClient(socket string) {
 	client := NewClient()
 	client.socket = socket
 	client.Connect()
-    buf := bufio.NewReader(os.Stdin)
+	buf := bufio.NewReader(os.Stdin)
 	for {
-	    fmt.Print(">> ") // Show prompt
-        read, err := buf.ReadString('\n')
-        if err != nil {
-          fmt.Println("")
-          break
-        }
-        line := read[0:len(read)-1]
-        if len(line) == 0 {
-          continue
-        }
-		resp, err := client.SendCommand(line)
-        if err != nil {
-          panic(fmt.Sprintf("Response: %v, Error: %v", resp, err))
+		fmt.Print(">> ") // Show prompt
+		read, err := buf.ReadString('\n')
+		if err != nil {
+			fmt.Println("")
+			break
 		}
-        fmt.Println("Response: ", resp)
+		if len(read) == 0 {
+			continue
+		}
+		read = strings.Trim(read, "\n")
+		sects := strings.Split(read, " ")
+		paramsLen := len(sects) - 1
+		cmd := string([]rune{COMMANDS[strings.ToUpper(sects[0])]})
+		if paramsLen > 0 {
+			cmd = cmd + fmt.Sprint(paramsLen)
+			for _, v := range sects[1:] {
+				cmd = cmd + fmt.Sprint(len([]byte(v))) + v
+			}
+		}
+		resp, err := client.SendCommand(cmd)
+		if err != nil {
+			panic(fmt.Sprintf("Response: %v, Error: %v", resp, err))
+		}
+		fmt.Println("Response: ", resp)
 	}
 }
