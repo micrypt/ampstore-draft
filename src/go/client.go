@@ -23,21 +23,18 @@ var COMMANDS = map[string]rune{
 
 func (cl *Client) Connect() error {
 	if cl.sock_mode == UNIX_SOCK {
-		// Create the connection
 		conn, err := net.Dial("unix", cl.socket)
 		if err != nil {
 			panic(fmt.Sprintf("Error creating connection: %v", err))
 		}
 		cl.conn = conn
-		// Print info about the unix socket
 		fmt.Println("Connected to", conn.RemoteAddr())
 	}
 	return nil
 }
 
-func (cl *Client) SendCommand(msg string) (b [512]byte, err1 error) {
+func (cl *Client) SendCommand(msg string) (b [BUFLEN]byte, err1 error) {
 	_, err := fmt.Fprint(cl.conn, msg)
-	fmt.Println("Sending: ", msg)
 	if err != nil {
 		panic(fmt.Sprintf("Transmission error: %v", err))
 	}
@@ -62,7 +59,6 @@ func runClient(socket string) {
 		fmt.Print(">> ") // Show prompt
 		read, err := buf.ReadString('\n')
 		if err != nil {
-			fmt.Println("")
 			break
 		}
 		if len(read) == 0 {
@@ -78,8 +74,8 @@ func runClient(socket string) {
 				cmd = cmd + fmt.Sprint(len([]byte(v))) + v
 			}
 		}
+		// TODO: Only read required bytes of response
 		resp, err := client.SendCommand(cmd)
-        // TODO: Only read required bytes of response
 		if err != nil {
 			panic(fmt.Sprintf("Response: %v, Error: %v", resp, err))
 		}

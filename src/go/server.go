@@ -22,7 +22,7 @@ const (
 )
 
 const (
-	BUFLEN       = 12
+	BUFLEN       = 512
 	PARAMOFFSET  = 2
 	SOCK         = "/tmp/ampstore.sock"
 	ERROR_STRING = "ERROR"
@@ -35,13 +35,11 @@ var COMMANDS_MAP = map[rune]func(*KVStore, []string, *[]byte) error{
 }
 
 func getCommand(s *KVStore, values []string, resp *[]byte) error {
-	fmt.Println("Running GET with: ", values)
 	err := s.Get(values[0], resp)
 	return err
 }
 
 func setCommand(s *KVStore, values []string, resp *[]byte) error {
-	fmt.Println("Running SET with: ", values)
 	key := values[0]
 	var val []byte
 	for _, v := range values[1:] {
@@ -57,26 +55,21 @@ func (s *Server) handleConn(c net.Conn) {
 	var cmdSlice, respSlice []byte
 	for {
 		nr, err := c.Read(buf)
-		fmt.Println("nr: ", nr)
 		if err != nil {
-			panic(fmt.Sprintf("Read: %v", err))
+			panic(fmt.Sprintf("Read error: %v", err))
 		}
 		if nr > 0 {
 			cmdSlice = append(cmdSlice, buf[0:nr]...)
 			cmd, params, done, _ := parseRequest(cmdSlice)
 			if done && params != nil {
-				fmt.Printf("cmd: %v, params: %v\n", cmd, params)
-				fmt.Printf("cmdSlice: %v\n", cmdSlice)
 				err1 := COMMANDS_MAP[cmd](s.store, params, &respSlice)
 				if err1 != nil {
 					c.Write([]byte(ERROR_STRING))
 					continue
 				}
-				fmt.Println("respSlice: ", respSlice)
-				nw, err := c.Write(respSlice)
-				fmt.Println("nw: ", nw)
+				_, err := c.Write(respSlice)
 				if err != nil {
-					panic(fmt.Sprintf("Write: %v", err))
+					panic(fmt.Sprintf("Write error: %v", err))
 				}
 				cmdSlice = []byte{}
 			}
@@ -98,12 +91,9 @@ func parseRequest(b []byte) (cmd rune, params []string, done bool, err error) {
 	for i = 0; i < paramsLen; i++ {
 		length, _ = makeInt(b[offset])
 		totalLen = totalLen + length
-		fmt.Println("Param length: ", length)
 		rStart := offset + 1
 		rEnd := rStart + length
-		fmt.Println("rStart: ", rStart, " rEnd: ", rEnd)
 		params[i] = string(b[rStart:rEnd])
-		fmt.Println("Current param: ", params[i])
 		offset = rEnd
 	}
 	totalLen = PARAMOFFSET + paramsLen + totalLen
@@ -115,7 +105,6 @@ func parseRequest(b []byte) (cmd rune, params []string, done bool, err error) {
 
 func (s *Server) Init() {
 	if s.sock_mode == UNIX_SOCK {
-		fmt.Println("Address: ", s.Addr)
 		os.Remove(s.Addr)
 		defer os.Remove(s.Addr)
 		listener, err := net.Listen("unix", s.Addr)
@@ -128,7 +117,6 @@ func (s *Server) Init() {
 			if err != nil {
 				panic(fmt.Sprintf("Accept: %v", err))
 			}
-			fmt.Println("Handling connection")
 			go s.handleConn(c)
 		}
 	}
