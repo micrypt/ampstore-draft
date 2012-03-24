@@ -22,7 +22,6 @@ var COMMANDS = map[string]rune{
 }
 
 func (cl *Client) Connect() error {
-
 	var proto string
 	if cl.stype == UNIX_SOCK {
 		proto = "unix"
