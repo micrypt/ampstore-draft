@@ -3,9 +3,16 @@ package main
 import "flag"
 
 func main() {
-	modes := map[string]func(socket string){"client": runClient, "server": runServer}
+	var stype int
+	modes := map[string]func(socket string, stype int){"client": runClient, "server": runServer}
 	mode := flag.String("mode", "", "What mode to start in")
 	socket := flag.String("socket", "", "Unix domain socket to connect to")
+	stype_raw := flag.String("stype", "", "Socket type to use")
 	flag.Parse()
-	modes[*mode](*socket)
+	if *stype_raw == "unix" {
+		stype = UNIX_SOCK
+	} else {
+		stype = TCP_SOCK
+	}
+	modes[*mode](*socket, stype)
 }

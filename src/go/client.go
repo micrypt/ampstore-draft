@@ -29,6 +29,13 @@ func (cl *Client) Connect() error {
 		}
 		cl.conn = conn
 		fmt.Println("Connected to", conn.RemoteAddr())
+	} else {
+		conn, err := net.Dial("tcp", cl.socket)
+		if err != nil {
+			panic(fmt.Sprintf("Error creating connection: %v", err))
+		}
+		cl.conn = conn
+		fmt.Println("Connected to", conn.RemoteAddr())
 	}
 	return nil
 }
@@ -45,14 +52,8 @@ func (cl *Client) SendCommand(msg string) (b [BUFLEN]byte, err1 error) {
 	return
 }
 
-func NewClient() *Client {
-	cl := &Client{nil, UNIX_SOCK, SOCK}
-	return cl
-}
-
-func runClient(socket string) {
-	client := NewClient()
-	client.socket = socket
+func runClient(socket string, stype int) {
+	client := &Client{nil, stype, socket}
 	client.Connect()
 	buf := bufio.NewReader(os.Stdin)
 	for {

@@ -13,7 +13,7 @@ type Store interface {
 }
 
 type KVStore struct {
-	//keyList *SkipList
+	//	keyList SkipList
 	mu    sync.RWMutex
 	table map[string][]byte
 	//  save chan record
@@ -26,7 +26,9 @@ type record struct {
 func (s *KVStore) Get(k string, v *[]byte) error {
 	//  s.mu.RLock()
 	//  defer s.mu.Unlock()
-	if val, ok := s.table[k]; ok {
+	//    s.keyList.Insert([]byte(k))
+	val, ok := s.table[k]
+	if ok {
 		*v = val
 		return nil
 	}
@@ -41,12 +43,13 @@ func (s *KVStore) Set(k string, v *[]byte, resp *[]byte) error {
 	return nil
 }
 
-//func (s *KVStore) Scan(start string, end string) {
-//  vect = make(Vector)
-//  for k,v := range(s.keyList[start, end]) {
-//    vect.Append(new Datum{ k, v })
+//func (s *KVStore) Scan(start string, end string, resp *[]byte ) {
+//  el := s.keyList.FindElement([]byte(start))
+//  for ; el.Next[0] != nil {
+//    append(resp, el.Value)
+//    el = el.Next[0]
 //  }
-//  return Serializer.Write(vect)
+//  return nil
 //}
 
 func (s *KVStore) Delete(k string) {

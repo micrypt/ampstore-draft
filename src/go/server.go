@@ -10,9 +10,9 @@ import (
 )
 
 type Server struct {
-	store     *KVStore
-	Addr      string
-	sock_mode int
+	store *KVStore
+	sock  string
+	stype int
 }
 
 const (
@@ -24,7 +24,6 @@ const (
 const (
 	BUFLEN       = 512
 	PARAMOFFSET  = 2
-	SOCK         = "/tmp/ampstore.sock"
 	ERROR_STRING = "ERROR"
 	OK_STRING    = "OK"
 )
@@ -104,31 +103,32 @@ func parseRequest(b []byte) (cmd rune, params []string, done bool, err error) {
 }
 
 func (s *Server) Init() {
-	if s.sock_mode == UNIX_SOCK {
-		os.Remove(s.Addr)
-		defer os.Remove(s.Addr)
-		listener, err := net.Listen("unix", s.Addr)
+	var listener net.Listener
+	var err error
+	if s.stype == UNIX_SOCK {
+		os.Remove(s.sock)
+		defer os.Remove(s.sock)
+		listener, err = net.Listen("unix", s.sock)
 		if err != nil {
 			panic(fmt.Sprintf("Error: %v\n", err))
 		}
-		fmt.Println("Listening on", listener.Addr())
-		for {
-			c, err := listener.Accept()
-			if err != nil {
-				panic(fmt.Sprintf("Accept: %v", err))
-			}
-			go s.handleConn(c)
+	} else {
+		listener, err = net.Listen("tcp", s.sock)
+		if err != nil {
+			panic(fmt.Sprintf("Error: %v\n", err))
 		}
+	}
+	fmt.Println("Listening on", listener.Addr())
+	for {
+		c, err := listener.Accept()
+		if err != nil {
+			panic(fmt.Sprintf("Accept: %v", err))
+		}
+		go s.handleConn(c)
 	}
 }
 
-func NewServer() *Server {
-	server := &Server{NewKVStore(), SOCK, UNIX_SOCK}
-	return server
-}
-
-func runServer(socket string) {
-	server := NewServer()
-	server.Addr = socket
+func runServer(socket string, stype int) {
+	server := &Server{NewKVStore(), socket, stype}
 	server.Init()
 }
