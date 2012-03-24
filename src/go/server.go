@@ -10,9 +10,9 @@ import (
 )
 
 type Server struct {
-	store *KVStore
-	sock  string
-	stype int
+	store  *KVStore
+	socket string
+	stype  int
 }
 
 const (
@@ -101,22 +101,18 @@ func parseRequest(b []byte) (cmd rune, params []string, done bool, err error) {
 	}
 	return
 }
-
 func (s *Server) Init() {
-	var listener net.Listener
-	var err error
+	var proto string
 	if s.stype == UNIX_SOCK {
-		os.Remove(s.sock)
-		defer os.Remove(s.sock)
-		listener, err = net.Listen("unix", s.sock)
-		if err != nil {
-			panic(fmt.Sprintf("Error: %v\n", err))
-		}
+		os.Remove(s.socket)
+		defer os.Remove(s.socket)
+		proto = "unix"
 	} else {
-		listener, err = net.Listen("tcp", s.sock)
-		if err != nil {
-			panic(fmt.Sprintf("Error: %v\n", err))
-		}
+		proto = "tcp"
+	}
+	listener, err := net.Listen(proto, s.socket)
+	if err != nil {
+		panic(fmt.Sprintf("Error: %v\n", err))
 	}
 	fmt.Println("Listening on", listener.Addr())
 	for {

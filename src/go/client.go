@@ -10,9 +10,9 @@ import (
 )
 
 type Client struct {
-	conn      net.Conn
-	sock_mode int
-	socket    string
+	conn   net.Conn
+	stype  int
+	socket string
 }
 
 var COMMANDS = map[string]rune{
@@ -22,21 +22,19 @@ var COMMANDS = map[string]rune{
 }
 
 func (cl *Client) Connect() error {
-	if cl.sock_mode == UNIX_SOCK {
-		conn, err := net.Dial("unix", cl.socket)
-		if err != nil {
-			panic(fmt.Sprintf("Error creating connection: %v", err))
-		}
-		cl.conn = conn
-		fmt.Println("Connected to", conn.RemoteAddr())
+
+	var proto string
+	if cl.stype == UNIX_SOCK {
+		proto = "unix"
 	} else {
-		conn, err := net.Dial("tcp", cl.socket)
-		if err != nil {
-			panic(fmt.Sprintf("Error creating connection: %v", err))
-		}
-		cl.conn = conn
-		fmt.Println("Connected to", conn.RemoteAddr())
+		proto = "tcp"
 	}
+	conn, err := net.Dial(proto, cl.socket)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating connection: %v", err))
+	}
+	cl.conn = conn
+	fmt.Println("Connected to", conn.RemoteAddr())
 	return nil
 }
 
